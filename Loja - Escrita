@@ -1,0 +1,201 @@
+#include <iostream>
+#include <fstream>
+#include <sstream>
+
+using namespace std;
+
+struct Produto {
+    int id;
+    string nome;
+    int quantidade;
+    float preco;
+    char status; // 'A' para active, 'D' para deleted
+};
+
+int lerProdutos(const string& nomeFicheiro, Produto produtos[], int tamanhoMaximo) {
+    ifstream ficheiro(nomeFicheiro);
+    string linha;
+    int contador = 0;
+
+    if (!ficheiro.is_open()) {
+        cout << "Erro ao abrir o ficheiro para leitura: " << nomeFicheiro << "\n";
+        return 0;
+    }
+
+    while (getline(ficheiro, linha) && contador < tamanhoMaximo) {
+        stringstream ss(linha);
+        Produto produto;
+        string temp;
+
+        getline(ss, temp, ',');
+        produto.id = stoi(temp);
+        getline(ss, produto.nome, ',');
+        getline(ss, temp, ',');
+        produto.quantidade = stoi(temp);
+        getline(ss, temp, ',');
+        produto.preco = stof(temp); // Converte para float
+        getline(ss, temp, ',');
+        produto.status = temp[0];
+
+        produtos[contador] = produto;
+        contador++;
+    }
+
+    ficheiro.close();
+    return contador;
+}
+
+void escreverProdutos(const string& nomeFicheiro, Produto produtos[], int numeroProdutos) {
+    ofstream ficheiro(nomeFicheiro);
+
+    if (!ficheiro.is_open()) {
+        cout << "Erro ao abrir o ficheiro para escrita: " << nomeFicheiro << "\n";
+        return;
+    }
+
+    for (int i = 0; i < numeroProdutos; i++) {
+        ficheiro << produtos[i].id << ","
+                 << produtos[i].nome << ","
+                 << produtos[i].quantidade << ","
+                 << produtos[i].preco << ","
+                 << produtos[i].status << "\n";
+    }
+
+    ficheiro.close();
+    cout << "Produtos guardados com sucesso no ficheiro: " << nomeFicheiro << "\n";
+}
+
+void adicionarProduto(Produto produtos[], int& quantidadeAtual) {
+    Produto novoProduto;
+    novoProduto.id = (quantidadeAtual == 0) ? 1 : produtos[quantidadeAtual - 1].id + 1;
+    cout << "Nome do produto: ";
+    cin >> novoProduto.nome;
+    cout << "Preço de cada produto: ";
+    cin >> novoProduto.preco;
+    cout << "Quantidade de produtos: ";
+    cin >> novoProduto.quantidade;
+    novoProduto.status = 'A'; // Produto ativo
+    produtos[quantidadeAtual] = novoProduto;
+    quantidadeAtual++;
+    cout << "Produto adicionado com sucesso!\n";
+}
+
+void exibirProdutos(const Produto produtos[], int quantidadeAtual) {
+    for (int i = 0; i < quantidadeAtual; i++) {
+        if (produtos[i].status == 'A') {
+            cout << "Produto " << produtos[i].id << ": " << endl;
+            cout << "Nome: " << produtos[i].nome << endl;
+            cout << "Preço: " << produtos[i].preco << endl;
+            cout << "Quantidade: " << produtos[i].quantidade << endl;
+            cout << "-------------------------" << endl;
+        }
+    }
+}
+
+void alterarProduto(Produto produtos[], int quantidadeAtual) {
+    int idAlterar;
+    cout << "Digite o ID do produto a alterar: ";
+    cin >> idAlterar;
+
+    bool encontrado = false;
+    for (int i = 0; i < quantidadeAtual; i++) {
+        if (produtos[i].id == idAlterar && produtos[i].status == 'A') {
+            cout << "Alterando o produto " << produtos[i].nome << "\n";
+
+            cin.ignore(); // Limpa o buffer do cin
+            cout << "Novo nome: ";
+            getline(cin, produtos[i].nome);
+
+            cout << "Nova quantidade: ";
+            cin >> produtos[i].quantidade;
+
+            cout << "Novo preço: ";
+            cin >> produtos[i].preco;
+
+            cout << "Produto alterado com sucesso!\n";
+            encontrado = true;
+            break;
+        }
+    }
+    if (!encontrado) {
+        cout << "Produto com ID " << idAlterar << " não encontrado!\n";
+    }
+}
+
+void eliminarProduto(Produto produtos[], int quantidadeAtual) {
+    int idEliminar;
+    cout << "Digite o ID do produto a eliminar: ";
+    cin >> idEliminar;
+
+    bool encontrado = false;
+    for (int i = 0; i < quantidadeAtual; i++) {
+        if (produtos[i].id == idEliminar && produtos[i].status == 'A') {
+            produtos[i].status = 'D'; // Marca como deletado
+            cout << "Produto " << produtos[i].nome << " eliminado com sucesso.\n";
+            encontrado = true;
+            break;
+        }
+    }
+    if (!encontrado) {
+        cout << "Produto com ID " << idEliminar << " não encontrado!\n";
+    }
+}
+
+float calcularValorTotal(const Produto produtos[], int quantidadeAtual) {
+    float valorTotal = 0;
+    for (int i = 0; i < quantidadeAtual; i++) {
+        if (produtos[i].status == 'A') {
+            valorTotal += produtos[i].preco * produtos[i].quantidade;
+        }
+    }
+    return valorTotal;
+}
+
+int main() {
+    const int MAX_PRODUTOS = 100;
+    Produto produtos[MAX_PRODUTOS];
+    int quantidadeAtual = 0;
+    string nomeFicheiro = "produtos.txt"; // Ficheiro padrão
+    int opcao;
+
+    quantidadeAtual = lerProdutos(nomeFicheiro, produtos, MAX_PRODUTOS);
+
+    do {
+        cout << "\nEscolha uma opção: " << endl;
+        cout << "1. Adicionar Produto" << endl;
+        cout << "2. Exibir Produtos" << endl;
+        cout << "3. Alterar Produto" << endl;
+        cout << "4. Eliminar Produto" << endl;
+        cout << "5. Calcular Valor Total do Stock" << endl;
+        cout << "0. Sair" << endl;
+        cin >> opcao;
+
+        switch (opcao) {
+            case 1:
+                adicionarProduto(produtos, quantidadeAtual);
+                break;
+            case 2:
+                exibirProdutos(produtos, quantidadeAtual);
+                break;
+            case 3:
+                alterarProduto(produtos, quantidadeAtual);
+                break;
+            case 4:
+                eliminarProduto(produtos, quantidadeAtual);
+                break;
+            case 5:
+                cout << "Valor total do stock: " << calcularValorTotal(produtos, quantidadeAtual) << endl;
+                break;
+            case 0:
+                cout << "Saindo..." << endl;
+                break;
+            default:
+                cout << "Escolha uma das opções acima." << endl;
+        }
+    } while (opcao != 0);
+
+    // Salvar produtos ao sair
+    escreverProdutos(nomeFicheiro, produtos, quantidadeAtual);
+
+    return 0;
+}
